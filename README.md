@@ -21,11 +21,10 @@ Be aware installed apps and features will be added or removed as I see fit at
 anytime. Hence the warning to not consider this a "stable" OS for anyone except
 myself. It is, in fact, a rock solid, efficient and fully featured operating
 system suitable for multimedia and modern computing in 2026. If you are the admin
-for more than one machine, you should really take the time to make one yourself
-for exactly YOUR needs.
+for more than one machine, you should really take the time to make your own for
+exactly YOUR needs.
 
-OR: to rebase an existing atomic Fedora installation (tested from Bluefin and
-Silverblue) to the latest build:
+OR: to rebase an existing atomic Fedora installation:
 
 - First rebase to the unsigned image, to get the proper signing keys and policies
   installed:
@@ -61,45 +60,42 @@ variant of Omarchy. Highlights:
 - **Flatpak list imported** so all of the favourite apps are installed on first
   boot.
 
-## Project structure
+## Variants
+### Desktop (default)
+The standard image with 1080p default, scrolling layout, Omarchy dotfiles, and
+wallpapers imported. Built with:
 
-```text
-.
-├── Containerfile          # Builds the image from ghcr.io/ublue-os/base-main
-├── build_files/
-│   ├── build.sh           # Image build script (packages + system files + services)
-│   ├── fedora.toml        # Package map: Arch → Fedora (omadora/omarchy lists)
-│   ├── fedora-baseline.packages
-│   ├── omarchy-base.packages
-│   ├── fedora-resolve.py  # Resolves Arch package lists to Fedora RPM names
-│   └── __pycache__/       # Compiled fedora-resolve.py
-├── disk_config/
-│   ├── disk.toml          # Bootc image builder config (qcow2/raw)
-│   └── iso-gnome.toml     # Bootc image builder config (ISO)
-├── system_files/          # Files copied verbatim into the image
-│   ├── etc/sddm.conf.d/   # SDDM greeter config (wayland, omarchy theme)
-│   ├── etc/skel/.config/hypr/   # Hyprland config (scrolling layout, 1080p)
-│   ├── etc/skel/.config/omarchy/  # Omarchy dotfiles + screensaver
-│   ├── usr/libexec/       # First-boot scripts (install flatpaks, user groups)
-│   ├── usr/share/backgrounds/hurunagus/  # Wallpapers (18)
-│   ├── usr/share/gnome-background-properties/  # Background property files
-│   ├── usr/share/sddm/themes/omarchy/  # SDDM login theme
-│   └── usr/share/wayland-sessions/hurunagus.desktop
-├── system-flatpaks.list   # Flatpak app list to install on first boot
-├── Justfile               # Build/run/helpers for podman/bib
-├── image-template.env     # build parameters (IMAGE_NAME etc.)
-├── artifacthub-repo.yml   # Artifact Hub metadata (optional)
-└── README.md
+```sh
+just build-iso
+just build-server-iso
 ```
 
-## Build
+### Server variant (user creation during install)
+A variant where user accounts are provisioned DURING install (in the installer's
+`%post` phase), not on first boot. This is useful for server deployments where
+you want the default user and groups to exist as soon as the machine reboots
+after install.
 
+Built with:
+```sh
+just build-server-iso
+just build-server-qcow2
+```
+
+The server variant kicks off user creation in `%post` (before the `bootc switch`)
+and disables the first-boot `add-default-user-groups.service` so user setup is
+not duplicated on first boot.
+
+## Build
 ```sh
 # Build the container image (Podman)
 just build
 
 # Build a bootable disk image (Bootc Image Builder)
 just build-qcow2
+just build-raw
+just build-iso
+just build-server-iso   # Server variant: user creation during install
 
 # Or from the Justfile directly
 just _rebuild-bib localhost/wegweg7979/hurunagus-hyprland latest qcow2 disk_config/disk.toml
@@ -107,15 +103,23 @@ just _rebuild-bib localhost/wegweg7979/hurunagus-hyprland latest qcow2 disk_conf
 
 ## Install
 
-```sh
-# Rebase an existing atomic Fedora install
-rpm-ostree rebase ostree-unverified-registry:ghcr.io/wegweg7979/hurunagus-hyprland:latest
-systemctl reboot
-
-# Then switch to the signed image
-rpm-ostree rebase ostree-image-signed:docker://ghcr.io/wegweg7979/hurunagus-hyprland:latest
-systemctl reboot
-```
+- First rebase to the unsigned image, to get the proper signing keys and policies
+  installed:
+  ```sh
+  rpm-ostree rebase ostree-unverified-registry:ghcr.io/wegweg7979/hurunagus-hyprland:latest
+  ```
+- Reboot to complete the rebase:
+  ```sh
+  systemctl reboot
+  ```
+- Then rebase to the signed image, like so:
+  ```sh
+  rpm-ostree rebase ostree-image-signed:docker://ghcr.io/wegweg7979/hurunagus-hyprland:latest
+  ```
+- Reboot again to complete the installation:
+  ```sh
+  systemctl reboot
+  ```
 
 ## References
 

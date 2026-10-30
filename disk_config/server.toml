@@ -1,0 +1,37 @@
+# Server variant: user accounts are provisioned during install, not on first boot.
+# Uses the Anaconda Users module + kickstart useradd in %post so the default
+# human user and device groups exist from the moment the machine reboots.
+#
+# Build: just build-iso (or modify disk_type to build qcow2/raw)
+
+[customizations.installer.kickstart]
+contents = """
+# Server variant: provision a default user and device groups DURING install,
+# not on first boot. User setup happens in %post (before the bootc switch),
+# so the new image ships with an interactive user and device groups already
+# configured. The first-boot user-group service is disabled and removed.
+
+%post
+# 1) Create the default user and device groups NOW (before bootc switch).
+#    %{anaconda.user.name} is provided by the Anaconda Users module.
+DEFAULT_USER=%{anaconda.user.name: hurunagus}
+
+# Create the account with a home directory
+useradd --create-home --shell /bin/bash --groups audio,video,kvm,render,input "$DEFAULT_USER"
+
+# Set a password (use the installer-provided one if present, else a placeholder).
+if [ -n "%{anaconda.user.password}" ]; then
+  echo "$DEFAULT_USER:%{anaconda.user.password}" | chpasswd
+else
+  echo "$DEFAULT_USER:hurunagus" | chpasswd
+fi
+
+# 2) Switch to the new image AFTER user setup.
+bootc switch --mutate-in-place --transport registry ghcr.io/wegweg7979/hurunagus-hyprland:latest
+
+# 3) Clean up the first-boot service so we do not double-provision.
+systemctl disable add-default-user-groups.service 2>/dev/null || true
+rm -f /etc/systemd/system/add-default-user-groups.service 2>/dev/null || true
+systemd-sysusers
+%end
+"""
