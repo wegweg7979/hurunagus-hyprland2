@@ -57,6 +57,13 @@ variant of Omarchy. Highlights:
 - **Scrolling window layout** as the default Hyprland layout.
 - **Wallpapers imported** from the original project into
   `~/.local/share/backgrounds` and `/usr/share/backgrounds/hurunagus`.
+- **SDDM user picker** — the Omarchy login theme lists every human account
+  instead of assuming a single last user. It still remembers the last login
+  when `/var/lib/sddm/state.conf` exists, and falls back to the first account
+  on a fresh install or rebase. Click a name, or use Up/Down while the
+  password field is focused. Switching accounts clears the password and any
+  failed-login state. The theme is mirrored into Omarchy's default theme path
+  as well, so `omarchy-refresh-sddm` keeps the picker.
 - **Flatpak list imported** so all of the favourite apps are installed on first
   boot.
 

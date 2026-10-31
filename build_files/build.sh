@@ -109,6 +109,19 @@ echo "::group:: Copying Hurunagus system files"
 cp -avf /ctx/system_files/. /
 echo "::endgroup::"
 
+# omarchy-plymouth-set --refresh-sddm (and omarchy-refresh-sddm) copies
+# /usr/share/omarchy/default/sddm/omarchy over the live theme. Mirror the
+# Hurunagus theme there so a refresh keeps the user picker and branding.
+echo "::group:: Mirroring the Hurunagus SDDM theme into Omarchy's defaults"
+mkdir -p /usr/share/omarchy/default/sddm
+rm -rf /usr/share/omarchy/default/sddm/omarchy
+chown -R root:root /usr/share/sddm/themes/omarchy
+chmod -R go-w /usr/share/sddm/themes/omarchy
+cp -a /usr/share/sddm/themes/omarchy /usr/share/omarchy/default/sddm/omarchy
+chown -R root:root /usr/share/omarchy/default/sddm/omarchy
+chmod -R go-w /usr/share/omarchy/default/sddm/omarchy
+echo "::endgroup::"
+
 # omedora-settings ships an Omedora session entry and hyprland-no-session ships
 # no session entry; keep Hurunagus as the only Hyprland login session.
 rm -f \
